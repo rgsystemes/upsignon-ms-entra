@@ -13,6 +13,7 @@
     // This compiler run should
     // only output d.ts files
     "emitDeclarationOnly": false,
+    "rootDir": "src",
     // Types should go into this directory.
     // Removing this would place the .d.ts files
     // next to the .js files

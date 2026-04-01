@@ -1,6 +1,6 @@
 {
   "name": "ms-entra-for-upsignon",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "out/index.js",
   "types": "out/index.d.ts",
   "scripts": {
@@ -8,14 +8,11 @@
   },
   "license": "",
   "dependencies": {
-    "@azure/identity": "^4.13.0",
+    "@azure/identity": "^4.13.1",
     "@microsoft/microsoft-graph-client": "^3.0.7"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.2"
   },
-  "packageManager": "pnpm@10.24.0",
-  "pnpm": {
-    "onlyBuiltDependencies": []
-  }
+  "packageManager": "pnpm@10.24.0"
 }
