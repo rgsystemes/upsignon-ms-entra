@@ -129,6 +129,19 @@ class _MicrosoftGraph {
         this.appResourceId = appResourceId;
     }
     /**
+     * Graph paginates its collections (100 items by default) and gives the next page in "@odata.nextLink".
+     * This follows every page and returns all the items.
+     */
+    async _getAllPages(firstPageRequest) {
+        let page = await firstPageRequest.get();
+        const items = [...page.value];
+        while (page["@odata.nextLink"]) {
+            page = await this.msGraph.api(page["@odata.nextLink"]).header("ConsistencyLevel", "eventual").get();
+            items.push(...page.value);
+        }
+        return items;
+    }
+    /**
      * Gets the id of the first user to match that email address and who has been assigned the role for using UpSignOn
      *
      * @param email
@@ -161,17 +174,16 @@ class _MicrosoftGraph {
         return allAuthorizedUserIds.indexOf(userId) >= 0;
     }
     async getAllUsersAssignedToUpSignOn() {
-        const allPrincipalsRes = await this.msGraph
+        const allPrincipals = await this._getAllPages(this.msGraph
             // PERMISSION = Application.Read.All OR Directory.Read.All
             // https://learn.microsoft.com/en-us/graph/api/serviceprincipal-list-approleassignedto?view=graph-rest-1.0&tabs=http
             .api(`/servicePrincipals/${this.appResourceId}/appRoleAssignedTo`)
             .header("ConsistencyLevel", "eventual")
-            .select(["principalType", "principalId"])
-            .get();
-        let allUsersId = allPrincipalsRes.value
+            .select(["principalType", "principalId"]));
+        let allUsersId = allPrincipals
             .filter((u) => u.principalType === "User")
             .map((u) => u.principalId);
-        const allGroups = allPrincipalsRes.value.filter((u) => u.principalType === "Group");
+        const allGroups = allPrincipals.filter((u) => u.principalType === "Group");
         for (let i = 0; i < allGroups.length; i++) {
             const g = allGroups[i];
             const allGroupUsersRes = await this.listGroupMembers(g.principalId);
@@ -187,7 +199,7 @@ class _MicrosoftGraph {
      * @returns
      */
     async getGroupsForUser(userId) {
-        const groups = await this.msGraph
+        return this._getAllPages(this.msGraph
             // Get groups, directory roles, and administrative units that the user is a transitive member of.
             // PERMISSION = Directory.Read.All OR GroupMember.Read.All OR Directory.Read.All
             // https://learn.microsoft.com/en-us/graph/api/user-list-memberof?view=graph-rest-1.0&tabs=http
@@ -195,9 +207,7 @@ class _MicrosoftGraph {
             // .api(`/users/${userId}/memberOf/microsoft.graph.administrativeUnit`) // pour avoir tous les administrativeUnit
             .api(`/users/${userId}/transitiveMemberOf/microsoft.graph.group`) // pour avoir tous les groupes
             .header("ConsistencyLevel", "eventual")
-            .select(["id", "displayName"])
-            .get();
-        return groups.value;
+            .select(["id", "displayName"]));
     }
     /**
      * Returns all members of a group
@@ -207,12 +217,10 @@ class _MicrosoftGraph {
         // Get a list of the group's transitive members. A group can have users, organizational contacts, devices, service principals and other groups as members. This operation is not transitive.
         // PERMISSION = GroupMember.Read.All OR Group.Read.All OR Directory.Read.All
         // https://learn.microsoft.com/en-us/graph/api/group-list-members?view=graph-rest-1.0&tabs=http
-        const groupMembers = await this.msGraph
+        return this._getAllPages(this.msGraph
             .api(`/groups/${groupId}/transitiveMembers/microsoft.graph.user/`)
             .header("ConsistencyLevel", "eventual")
-            .select(["id", "mail", "displayName"])
-            .get();
-        return groupMembers.value;
+            .select(["id", "mail", "displayName"]));
     }
     async checkGroupMembers(groupIds) {
         // PERMISSION = GroupMember.Read.All OR Group.Read.All

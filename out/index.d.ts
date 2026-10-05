@@ -1,4 +1,4 @@
-import { Client } from "@microsoft/microsoft-graph-client";
+import { Client, GraphRequest } from "@microsoft/microsoft-graph-client";
 export type EntraConfig = {
     tenantId: string | null;
     clientId: string | null;
@@ -41,6 +41,11 @@ declare class _MicrosoftGraph {
      * @param appResourceId - Identifier of the ressource (UpSignOn) in the graph that users need to have access to in order to be authorized to use an UpSignOn licence
      */
     constructor(tenantId: string, clientId: string, clientSecret: string, appResourceId: string);
+    /**
+     * Graph paginates its collections (100 items by default) and gives the next page in "@odata.nextLink".
+     * This follows every page and returns all the items.
+     */
+    _getAllPages<T>(firstPageRequest: GraphRequest): Promise<T[]>;
     /**
      * Gets the id of the first user to match that email address and who has been assigned the role for using UpSignOn
      *
